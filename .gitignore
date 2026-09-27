@@ -10,3 +10,7 @@ tmp
 # Git only
 frontend-dist
 
+
+# Python deployment-controller test caches
+__pycache__/
+*.pyc
