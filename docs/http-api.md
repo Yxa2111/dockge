@@ -8,6 +8,22 @@ not part of this API.
 The machine-readable contract is [openapi.yaml](openapi.yaml). API routes are on
 Dockge's existing port under `/api/v1`; no additional listener is needed.
 
+## Interactive documentation
+
+Open **Settings → API Keys → API documentation**, or visit `/api/docs/`. Swagger UI
+renders the same OpenAPI definition shipped in this repository. Download it from
+`/api/openapi.yaml`. The reference is public; it contains no instance data.
+
+Use **Authorize** to enter a key (without the `Bearer ` prefix) before trying a
+request. Calls target the current Dockge instance and use the key’s normal
+permissions. The key is kept in memory only, not browser storage. JavaScript and
+CSS are bundled locally; the page does not use a CDN or an external validator.
+For streaming logs, use `curl -N`; use `follow=false` in Swagger UI.
+
+The UI is generated from OpenAPI, not inferred from Express implementation. Keep
+the definition synchronized with interface changes; tests check that documented
+operations cover the implemented API routes.
+
 ## API Keys
 
 Open **Settings → API Keys**. Create a named key, choose its permission and optional

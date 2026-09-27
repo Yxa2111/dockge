@@ -11,6 +11,8 @@ security:
 paths:
   /stacks:
     get:
+      operationId: listStacks
+      tags: [Stacks]
       summary: List local Stacks
       description: 'Requires read permission or higher. '
       parameters: &id001 []
@@ -39,6 +41,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
     post:
+      operationId: createStack
+      tags: [Stacks]
       summary: Create and save a Stack without starting it
       description: 'Requires manage permission or higher. '
       parameters: *id001
@@ -71,6 +75,8 @@ paths:
               $ref: '#/components/schemas/CreateStack'
   /stacks/{name}:
     get:
+      operationId: getStack
+      tags: [Stacks]
       summary: Stack and service status without configuration
       description: 'Requires read permission or higher. '
       parameters:
@@ -108,6 +114,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
     delete:
+      operationId: deleteStack
+      tags: [Stacks]
       summary: Down and recursively delete the entire Stack directory
       description: Requires manage permission or higher. Includes application data
         inside that directory. Docker named volumes are not explicitly removed. Command
@@ -151,6 +159,8 @@ paths:
           $ref: '#/components/responses/503'
   /stacks/{name}/config:
     get:
+      operationId: getStackConfig
+      tags: [Configuration]
       summary: Read Compose and .env
       description: 'Requires manage permission or higher. '
       parameters:
@@ -175,6 +185,8 @@ paths:
         '500':
           $ref: '#/components/responses/500'
     put:
+      operationId: replaceStackConfig
+      tags: [Configuration]
       summary: Replace Compose and .env without deploying
       description: 'Requires manage permission or higher. '
       parameters:
@@ -211,6 +223,8 @@ paths:
               $ref: '#/components/schemas/Config'
   /stacks/{name}/actions/{action}:
     post:
+      operationId: runStackAction
+      tags: [Stacks]
       summary: Run a Stack action asynchronously
       description: Requires operate permission or higher. deploy and down require
         manage. update pulls images and redeploys only if the Stack is running. The
@@ -258,6 +272,8 @@ paths:
           $ref: '#/components/responses/503'
   /stacks/{name}/logs:
     get:
+      operationId: getStackLogs
+      tags: [Logs]
       summary: Read application logs
       description: Requires read permission or higher. JSON output is capped at 1
         MiB. SSE log events carry {text}; end/error closes the stream. Revoke/expiry
@@ -310,6 +326,8 @@ paths:
           $ref: '#/components/responses/502'
   /operations:
     get:
+      operationId: listOperations
+      tags: [Operations]
       summary: List operations, newest first
       description: 'Requires read permission or higher. '
       parameters:
@@ -362,6 +380,8 @@ paths:
           $ref: '#/components/responses/500'
   /operations/{id}:
     get:
+      operationId: getOperation
+      tags: [Operations]
       summary: Read operation result
       description: 'Requires read permission or higher. '
       parameters:
@@ -393,6 +413,8 @@ paths:
           $ref: '#/components/responses/500'
   /operations/{id}/logs:
     get:
+      operationId: getOperationLogs
+      tags: [Operations]
       summary: Read command execution logs
       description: Requires read permission or higher. SSE sends log {text,next_offset},
         heartbeat {offset}, and end containing Operation. Errors send an error event
@@ -634,3 +656,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+tags:
+- name: Stacks
+  description: Local Stack status and lifecycle.
+- name: Configuration
+  description: Compose and environment files. Requires manage permission.
+- name: Logs
+  description: Application output. Use curl -N for streaming.
+- name: Operations
+  description: Asynchronous task status and command output.

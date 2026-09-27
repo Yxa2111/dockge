@@ -7,6 +7,7 @@ import Dialect from "knex/lib/dialects/sqlite3/index.js";
 import sqlite from "@louislam/sqlite3";
 import { R } from "redbean-node";
 import { up } from "../backend/migrations/2026-09-27-0000-http-api";
+import { ApiDocsRouter } from "../backend/routers/api-docs-router";
 import { ApiRouter } from "../backend/routers/api-router";
 import { ApiKeys } from "../backend/api/keys";
 import { Operations } from "../backend/api/operations";
@@ -32,6 +33,7 @@ export async function fixture() {
     await server.operations.init();
     const app = express();
     app.use(new ApiRouter().create(app, server));
+    app.use(new ApiDocsRouter().create(app, server));
     const http = app.listen(0, "127.0.0.1");
     await new Promise<void>(resolve => http.on("listening", resolve));
     const address = http.address();

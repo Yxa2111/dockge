@@ -169,5 +169,6 @@
     "apiRevokeConfirm": "Revoke “{name}”? Clients using this key will lose access. Running operations will continue.",
     "apiRequestTimeout": "Request timed out. Refresh the list before retrying; the change may already have completed.",
     "apiRequestFailed": "Request failed.",
-    "apiInvalidExpiry": "Choose an expiry time in the future."
+    "apiInvalidExpiry": "Choose an expiry time in the future.",
+    "apiDocumentation": "API documentation"
 }

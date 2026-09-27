@@ -169,5 +169,6 @@
     "apiRevokeConfirm": "撤销“{name}”？使用此密钥的客户端将失去访问权限。正在执行的任务会继续。",
     "apiRequestTimeout": "请求超时。请先刷新列表再重试，操作可能已完成。",
     "apiRequestFailed": "请求失败。",
-    "apiInvalidExpiry": "请选择未来的到期时间。"
+    "apiInvalidExpiry": "请选择未来的到期时间。",
+    "apiDocumentation": "API 文档"
 }

@@ -1,6 +1,7 @@
 <template>
     <div class="api-keys my-4">
         <p class="text-secondary">{{ $t("apiKeysIntro") }}</p>
+        <a class="btn btn-outline-primary mb-4" href="/api/docs/" target="_blank" rel="noopener noreferrer">{{ $t("apiDocumentation") }} ↗</a>
         <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
         <form v-if="authDisabled && !unlocked" class="mb-4" @submit.prevent="unlock">
             <label class="form-label" for="api-admin-password">{{ $t("apiAdminPassword") }}</label>

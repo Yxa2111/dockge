@@ -1,3 +1,4 @@
+import { ApiDocsRouter } from "./routers/api-docs-router";
 import { ApiRouter } from "./routers/api-router";
 import { ApiKeySocketHandler } from "./socket-handlers/api-key-socket-handler";
 import { Operations } from "./api/operations";
@@ -56,6 +57,7 @@ export class DockgeServer {
     routerList : Router[] = [
         new MainRouter(),
         new ApiRouter(),
+        new ApiDocsRouter(),
     ];
 
     /**
