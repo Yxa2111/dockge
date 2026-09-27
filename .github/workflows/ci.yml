@@ -42,6 +42,10 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test deployment controller
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s tests -p 'deploy_test.py'
+
       - name: Build
         run: npm run build:frontend
       # more things can be add later like tests etc..

@@ -142,6 +142,8 @@ not successful; check the operation's `state`, `exit_code` and `error`.
 
 ## Upgrade and validation
 
+For the installed server and one-command upgrades/rollback, see [deployment.md](deployment.md).
+
 Build this fork with `npm ci && npm run build:frontend`, then use the existing
 Dockerfile or `npm start`. Preserve the existing data and stacks mounts.
 Startup adds `api_key` and `api_operation` tables through Dockge's normal

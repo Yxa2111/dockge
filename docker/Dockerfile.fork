@@ -1,0 +1,26 @@
+# Official 1.5.0 runtime, pinned by registry digest (Node 22 + Docker Compose).
+ARG DOCKGE_BASE=louislam/dockge@sha256:335c6368b880ecc203236ed89e6e5232e0d6578e8ef5920e4a502390451502bf
+FROM ${DOCKGE_BASE} AS build
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend ./frontend
+COPY common ./common
+COPY tsconfig.json ./
+RUN npm run build:frontend
+
+FROM ${DOCKGE_BASE} AS release
+WORKDIR /app
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/Yxa2111/dockge" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="1.5.0-yxa-api"
+ENV DOCKGE_REVISION=${VCS_REF}
+RUN rm -rf /app/frontend-dist /app/node_modules
+COPY --from=build /build/node_modules ./node_modules
+COPY --from=build /build/frontend-dist ./frontend-dist
+COPY package.json package-lock.json ./
+COPY backend ./backend
+COPY common ./common
+COPY docs ./docs
+# Inherit the upstream init, command, port and container healthcheck.

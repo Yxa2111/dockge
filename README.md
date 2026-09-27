@@ -14,7 +14,7 @@ View Video: https://youtu.be/AWAlOQeNpgU?t=48
 
 ## HTTP API (this fork)
 
-This fork adds a single-machine HTTP API for scripts and AI tools. Manage keys in **Settings → API Keys**. See the [API guide](docs/http-api.md) and [OpenAPI contract](docs/openapi.yaml). Existing web and Socket.IO features remain available.
+This fork adds a single-machine HTTP API for scripts and AI tools. Manage keys in **Settings → API Keys**. See the [API guide](docs/http-api.md) and [OpenAPI contract](docs/openapi.yaml). Existing web and Socket.IO features remain available. See [deployment and one-command upgrades](docs/deployment.md).
 
 ## ⭐ Features
 
