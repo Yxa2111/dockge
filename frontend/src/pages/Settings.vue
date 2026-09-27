@@ -83,6 +83,9 @@ export default {
                 security: {
                     title: this.$t("Security"),
                 },
+                "api-keys": {
+                    title: this.$t("apiKeys"),
+                },
                 about: {
                     title: this.$t("About"),
                 },

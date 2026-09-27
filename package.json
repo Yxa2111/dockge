@@ -24,7 +24,9 @@
         "start-docker": "docker run --rm -p 5001:5001 --name dockge louislam/dockge:latest",
         "mark-as-nightly": "tsx ./extra/mark-as-nightly.ts",
         "reformat-changelog": "tsx ./extra/reformat-changelog.ts",
-        "reset-password": "tsx ./extra/reset-password.ts"
+        "reset-password": "tsx ./extra/reset-password.ts",
+        "test": "tsx --test tests/*.test.ts",
+        "test:docker": "DOCKGE_TEST_DOCKER=1 tsx --test tests/docker.test.ts"
     },
     "dependencies": {
         "@homebridge/node-pty-prebuilt-multiarch": "0.11.14",

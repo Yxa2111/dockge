@@ -1,3 +1,4 @@
+import { StackService } from "../api/stack-service";
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { DockgeServer } from "../dockge-server";
 import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
@@ -6,9 +7,19 @@ import { AgentSocket } from "../../common/agent-socket";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
-        // Do not call super.create()
+        // The lock includes configuration persistence and all command phases.
+        const onMutation = (event: string, handler: (...args: unknown[]) => Promise<void>) => {
+            agentSocket.on(event, async (...args: unknown[]) => {
+                try {
+                    checkLogin(socket);
+                    await StackService.withLock(server, args[0], () => handler(...args));
+                } catch (error) {
+                    callbackError(error, args[args.length - 1]);
+                }
+            });
+        };
 
-        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        onMutation("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
             try {
                 checkLogin(socket);
                 const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd);
@@ -25,7 +36,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        onMutation("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
             try {
                 checkLogin(socket);
                 await this.saveStack(server, name, composeYAML, composeENV, isAdd);
@@ -40,7 +51,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("deleteStack", async (name : unknown, callback) => {
+        onMutation("deleteStack", async (name : unknown, callback) => {
             try {
                 checkLogin(socket);
                 if (typeof(name) !== "string") {
@@ -106,7 +117,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // startStack
-        agentSocket.on("startStack", async (stackName : unknown, callback) => {
+        onMutation("startStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
@@ -131,7 +142,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // stopStack
-        agentSocket.on("stopStack", async (stackName : unknown, callback) => {
+        onMutation("stopStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
@@ -153,7 +164,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // restartStack
-        agentSocket.on("restartStack", async (stackName : unknown, callback) => {
+        onMutation("restartStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
@@ -175,7 +186,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // updateStack
-        agentSocket.on("updateStack", async (stackName : unknown, callback) => {
+        onMutation("updateStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
@@ -197,7 +208,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
 
         // down stack
-        agentSocket.on("downStack", async (stackName : unknown, callback) => {
+        onMutation("downStack", async (stackName : unknown, callback) => {
             try {
                 checkLogin(socket);
 
@@ -268,9 +279,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
             throw new ValidationError("isAdd must be a boolean");
         }
 
-        const stack = new Stack(server, name, composeYAML, composeENV, false);
-        await stack.save(isAdd);
-        return stack;
+        return StackService.save(server, name, composeYAML, composeENV, isAdd);
     }
 
 }

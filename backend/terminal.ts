@@ -25,6 +25,7 @@ export class Terminal {
     protected file : string;
     protected args : string | string[];
     protected cwd : string;
+    protected onData?: (data: string) => void;
     protected callback? : (exitCode : number) => void;
 
     protected _rows : number = TERMINAL_ROWS;
@@ -122,6 +123,7 @@ export class Terminal {
             // On Data
             this._ptyProcess.onData((data) => {
                 this.buffer.pushItem(data);
+                this.onData?.(data);
 
                 for (const socketID in this.socketList) {
                     const socket = this.socketList[socketID];
@@ -136,7 +138,8 @@ export class Terminal {
                 clearInterval(this.keepAliveInterval);
 
                 log.error("Terminal", "Failed to start terminal: " + error.message);
-                const exitCode = Number(error.message.split(" ").pop());
+                this.onData?.(error.message + "\n");
+                const exitCode = -1;
                 this.exit({
                     exitCode,
                 });
@@ -221,16 +224,17 @@ export class Terminal {
         return terminal;
     }
 
-    public static exec(server : DockgeServer, socket : DockgeSocket | undefined, terminalName : string, file : string, args : string | string[], cwd : string) : Promise<number> {
+    public static exec(server : DockgeServer, socket : DockgeSocket | undefined, terminalName : string, file : string, args : string | string[], cwd : string, onData?: (data: string) => void) : Promise<number> {
         return new Promise((resolve, reject) => {
             // check if terminal exists
             if (Terminal.terminalMap.has(terminalName)) {
-                reject("Another operation is already running, please try again later.");
+                reject(new Error("Another operation is already running, please try again later."));
                 return;
             }
 
             let terminal = new Terminal(server, terminalName, file, args, cwd);
             terminal.rows = PROGRESS_TERMINAL_ROWS;
+            terminal.onData = onData;
 
             if (socket) {
                 terminal.join(socket);

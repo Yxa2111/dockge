@@ -1,3 +1,4 @@
+import type { ExecutionContext } from "./api/stack-service";
 import { DockgeServer } from "./dockge-server";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
@@ -206,18 +207,26 @@ export class Stack {
         }
     }
 
-    async deploy(socket : DockgeSocket) : Promise<number> {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path);
+    async deploy(context: DockgeSocket | ExecutionContext = {}) : Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to deploy, please check the terminal output for more information.");
         }
         return exitCode;
     }
 
-    async delete(socket: DockgeSocket) : Promise<number> {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "down", "--remove-orphans" ], this.path);
+    async delete(context: DockgeSocket | ExecutionContext = {}) : Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "down", "--remove-orphans" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to delete, please check the terminal output for more information.");
         }
@@ -407,45 +416,65 @@ export class Stack {
         return stack;
     }
 
-    async start(socket: DockgeSocket) {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path);
+    async start(context: DockgeSocket | ExecutionContext = {}) {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to start, please check the terminal output for more information.");
         }
         return exitCode;
     }
 
-    async stop(socket: DockgeSocket) : Promise<number> {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "stop" ], this.path);
+    async stop(context: DockgeSocket | ExecutionContext = {}) : Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "stop" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to stop, please check the terminal output for more information.");
         }
         return exitCode;
     }
 
-    async restart(socket: DockgeSocket) : Promise<number> {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "restart" ], this.path);
+    async restart(context: DockgeSocket | ExecutionContext = {}) : Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "restart" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
         return exitCode;
     }
 
-    async down(socket: DockgeSocket) : Promise<number> {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "down" ], this.path);
+    async down(context: DockgeSocket | ExecutionContext = {}) : Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "down" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to down, please check the terminal output for more information.");
         }
         return exitCode;
     }
 
-    async update(socket: DockgeSocket) {
-        const terminalName = getComposeTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "pull" ], this.path);
+    async update(context: DockgeSocket | ExecutionContext = {}) {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const terminalName = getComposeTerminalName(socket?.endpoint ?? "", this.name);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "pull" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to pull, please check the terminal output for more information.");
         }
@@ -457,9 +486,22 @@ export class Stack {
             return exitCode;
         }
 
-        exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path);
+        exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", [ "compose", "up", "-d", "--remove-orphans" ], this.path, onData);
+        onExit?.(exitCode);
         if (exitCode !== 0) {
             throw new Error("Failed to restart, please check the terminal output for more information.");
+        }
+        return exitCode;
+    }
+
+    async pull(context: DockgeSocket | ExecutionContext = {}): Promise<number> {
+        const { socket, onData, onExit } = "emitAgent" in context ? { socket: context,
+            onData: undefined,
+            onExit: undefined } : context;
+        const exitCode = await Terminal.exec(this.server, socket, getComposeTerminalName(socket?.endpoint ?? "", this.name), "docker", [ "compose", "pull" ], this.path, onData);
+        onExit?.(exitCode);
+        if (exitCode !== 0) {
+            throw new Error("Failed to pull, please check the execution log.");
         }
         return exitCode;
     }

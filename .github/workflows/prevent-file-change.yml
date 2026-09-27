@@ -11,6 +11,6 @@ jobs:
         uses: xalvarez/prevent-file-change-action@v1
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          # Regex, /src/lang/*.json is not allowed to be changed, except for /src/lang/en.json
-          pattern: '^(?!frontend/src/lang/en\.json$)frontend/src/lang/.*\.json$'
+          # This fork maintains English and Simplified Chinese directly.
+          pattern: '^(?!frontend/src/lang/(en|zh-CN)\.json$)frontend/src/lang/.*\.json$'
           trustedAuthors: UptimeKumaBot

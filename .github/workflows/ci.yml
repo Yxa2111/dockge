@@ -2,11 +2,11 @@ name: Node.js CI - Dockge
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths-ignore:
       - '*.md'
   pull_request:
-    branches: [master]
+    branches: [main, master]
     paths-ignore:
       - '*.md'
 
@@ -14,14 +14,15 @@ jobs:
   ci:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest, ARM, ARM64]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node: [22] # Can be changed
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout Code
+      - name: Configure Git line endings
         run: |  # Mainly for Windows
           git config --global core.autocrlf false
           git config --global core.eol lf
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -37,6 +38,9 @@ jobs:
 
       - name: Check Typescript
         run: npm run check-ts
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build:frontend

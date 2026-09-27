@@ -1,0 +1,636 @@
+openapi: 3.0.3
+info:
+  title: Dockge Local Stack API
+  version: 1.0.0
+  description: Single-machine API for our Dockge 1.5.0 fork. Timestamps are Unix milliseconds.
+    API Keys are managed through the existing authenticated web UI.
+servers:
+- url: /api/v1
+security:
+- ApiKey: []
+paths:
+  /stacks:
+    get:
+      summary: List local Stacks
+      description: 'Requires read permission or higher. '
+      parameters: &id001 []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stacks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Stack'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+    post:
+      summary: Create and save a Stack without starting it
+      description: 'Requires manage permission or higher. '
+      parameters: *id001
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stack'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+        '413':
+          $ref: '#/components/responses/413'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStack'
+  /stacks/{name}:
+    get:
+      summary: Stack and service status without configuration
+      description: 'Requires read permission or higher. '
+      parameters:
+      - &id002
+        name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z0-9_-]{1,200}$
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Stack'
+                - type: object
+                  properties:
+                    services:
+                      type: object
+                      additionalProperties: &id003
+                        type: string
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+    delete:
+      summary: Down and recursively delete the entire Stack directory
+      description: Requires manage permission or higher. Includes application data
+        inside that directory. Docker named volumes are not explicitly removed. Command
+        failure preserves the directory.
+      parameters:
+      - *id002
+      - &id004
+        name: Idempotency-Key
+        in: header
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description: Optional. Scoped to API Key, retained for 7 days after completion.
+          Same Stack/action returns the previous operation; different request returns
+          409.
+      responses:
+        '202':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accepted'
+          headers:
+            Location:
+              description: Operation query URL
+              schema: *id003
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+  /stacks/{name}/config:
+    get:
+      summary: Read Compose and .env
+      description: 'Requires manage permission or higher. '
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+    put:
+      summary: Replace Compose and .env without deploying
+      description: 'Requires manage permission or higher. '
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+        '413':
+          $ref: '#/components/responses/413'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Config'
+  /stacks/{name}/actions/{action}:
+    post:
+      summary: Run a Stack action asynchronously
+      description: Requires operate permission or higher. deploy and down require
+        manage. update pulls images and redeploys only if the Stack is running. The
+        HTTP connection does not own task lifetime. No request body is needed.
+      parameters:
+      - *id002
+      - name: action
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - start
+          - stop
+          - restart
+          - pull
+          - update
+          - deploy
+          - down
+      - *id004
+      responses:
+        '202':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accepted'
+          headers:
+            Location:
+              description: Operation query URL
+              schema: *id003
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+        '503':
+          $ref: '#/components/responses/503'
+  /stacks/{name}/logs:
+    get:
+      summary: Read application logs
+      description: Requires read permission or higher. JSON output is capped at 1
+        MiB. SSE log events carry {text}; end/error closes the stream. Revoke/expiry
+        is checked at least every 10 seconds. Disconnect stops log following, not
+        containers.
+      parameters:
+      - *id002
+      - name: tail
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          default: 100
+        description: Number of trailing lines per service.
+      - name: service
+        in: query
+        schema: *id003
+        description: Optional Compose service name.
+      - &id006
+        name: follow
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: true selects text/event-stream; otherwise return JSON.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLog'
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+        '502':
+          $ref: '#/components/responses/502'
+  /operations:
+    get:
+      summary: List operations, newest first
+      description: 'Requires read permission or higher. '
+      parameters:
+      - name: stack
+        in: query
+        schema: *id003
+        description: Filter by Stack name.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+        description: Page size.
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: Row offset.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  operations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Operation'
+                  next_offset: &id007
+                    type: integer
+                    format: int64
+                    nullable: true
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+  /operations/{id}:
+    get:
+      summary: Read operation result
+      description: 'Requires read permission or higher. '
+      parameters:
+      - &id005
+        name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+  /operations/{id}/logs:
+    get:
+      summary: Read command execution logs
+      description: Requires read permission or higher. SSE sends log {text,next_offset},
+        heartbeat {offset}, and end containing Operation. Errors send an error event
+        then close. PTY output may contain ANSI escapes. Tasks/logs retained 7 days;
+        each log capped at 10 MiB.
+      parameters:
+      - *id005
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: Byte offset; use next_offset from the previous response.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 4
+          maximum: 1048576
+          default: 65536
+        description: Maximum bytes per chunk.
+      - *id006
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogPage'
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  securitySchemes:
+    ApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: dg_<opaque key>
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: *id003
+            message: *id003
+            details: *id003
+          required:
+          - code
+          - message
+      required:
+      - error
+    Config:
+      type: object
+      properties:
+        composeYAML:
+          type: string
+          description: Literal Compose YAML, preserving comments.
+        composeENV:
+          type: string
+          description: Literal .env; empty string clears it.
+      required:
+      - composeYAML
+      - composeENV
+    CreateStack:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z0-9_-]{1,200}$
+        composeYAML: *id003
+        composeENV: *id003
+      required:
+      - name
+      - composeYAML
+      - composeENV
+    Stack:
+      type: object
+      properties:
+        name: *id003
+        status:
+          type: integer
+          description: Dockge 1.5.0 status code; see API guide.
+        isManagedByDockge:
+          type: boolean
+        composeFileName: *id003
+        endpoint:
+          type: string
+          enum:
+          - ''
+        tags:
+          type: array
+          items: *id003
+      required:
+      - name
+      - status
+      - isManagedByDockge
+    Accepted:
+      type: object
+      properties:
+        operation_id:
+          type: string
+          format: uuid
+        url: *id003
+        state: *id003
+      required:
+      - operation_id
+      - url
+      - state
+    Operation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stack: *id003
+        action:
+          type: string
+          enum:
+          - start
+          - stop
+          - restart
+          - pull
+          - update
+          - deploy
+          - down
+          - delete
+        key_id: *id003
+        state:
+          type: string
+          enum:
+          - running
+          - succeeded
+          - failed
+          - interrupted
+        created_at: &id009
+          type: integer
+          format: int64
+        finished_at: *id007
+        exit_code: *id007
+        error: &id008
+          type: string
+          nullable: true
+        truncated:
+          type: boolean
+        idempotency_key: *id008
+      required:
+      - id
+      - stack
+      - action
+      - state
+      - created_at
+    LogPage:
+      type: object
+      properties:
+        text: *id003
+        next_offset: *id009
+        truncated:
+          type: boolean
+      required:
+      - text
+      - next_offset
+      - truncated
+    RuntimeLog:
+      type: object
+      properties:
+        text: *id003
+        truncated:
+          type: boolean
+      required:
+      - text
+      - truncated
+  responses:
+    '400':
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: Invalid, expired or revoked API Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '403':
+      description: Insufficient permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '404':
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '409':
+      description: Stack busy, duplicate Stack or conflicting idempotency key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '413':
+      description: JSON body exceeds 1 MiB
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '500':
+      description: Internal failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '502':
+      description: Docker log command failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '503':
+      description: Server shutting down
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

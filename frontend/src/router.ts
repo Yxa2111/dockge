@@ -13,6 +13,7 @@ const Settings = () => import("./pages/Settings.vue");
 // Settings - Sub Pages
 import Appearance from "./components/settings/Appearance.vue";
 import General from "./components/settings/General.vue";
+const ApiKeys = () => import("./components/settings/ApiKeys.vue");
 const Security = () => import("./components/settings/Security.vue");
 import About from "./components/settings/About.vue";
 
@@ -77,6 +78,10 @@ const routes = [
                             {
                                 path: "security",
                                 component: Security,
+                            },
+                            {
+                                path: "api-keys",
+                                component: ApiKeys,
                             },
                             {
                                 path: "about",

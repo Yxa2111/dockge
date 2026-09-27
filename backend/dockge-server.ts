@@ -1,3 +1,6 @@
+import { ApiRouter } from "./routers/api-router";
+import { ApiKeySocketHandler } from "./socket-handlers/api-key-socket-handler";
+import { Operations } from "./api/operations";
 import "dotenv/config";
 import { MainRouter } from "./routers/main-router";
 import * as fs from "node:fs";
@@ -39,6 +42,7 @@ import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-
 import { Terminal } from "./terminal";
 
 export class DockgeServer {
+    operations!: Operations;
     app : Express;
     httpServer : http.Server;
     packageJSON : PackageJson;
@@ -51,6 +55,7 @@ export class DockgeServer {
      */
     routerList : Router[] = [
         new MainRouter(),
+        new ApiRouter(),
     ];
 
     /**
@@ -58,6 +63,7 @@ export class DockgeServer {
      */
     socketHandlerList : SocketHandler[] = [
         new MainSocketHandler(),
+        new ApiKeySocketHandler(),
         new ManageAgentSocketHandler(),
     ];
 
@@ -302,7 +308,7 @@ export class DockgeServer {
             log.debug("auth", "check auto login");
             if (await Settings.get("disableAuth")) {
                 log.info("auth", "Disabled Auth: auto login to admin");
-                this.afterLogin(dockgeSocket, await R.findOne("user") as User);
+                this.afterLogin(dockgeSocket, await R.findOne("user") as User, false);
                 dockgeSocket.emit("autoLogin");
             } else {
                 log.debug("auth", "need auth");
@@ -327,7 +333,8 @@ export class DockgeServer {
         }
     }
 
-    async afterLogin(socket : DockgeSocket, user : User) {
+    async afterLogin(socket : DockgeSocket, user : User, authenticated = true) {
+        socket.authenticated = authenticated;
         socket.userID = user.id;
         socket.join(user.id.toString());
 
@@ -355,6 +362,8 @@ export class DockgeServer {
         // Connect to database
         try {
             await Database.init(this);
+            this.operations = new Operations(this);
+            await this.operations.init();
         } catch (e) {
             if (e instanceof Error) {
                 log.error("server", "Failed to prepare your database: " + e.message);
@@ -411,7 +420,7 @@ export class DockgeServer {
             timeout: 30000,                   // timeout: 30 secs
             development: false,               // not in dev mode
             forceExit: true,                  // triggers process.exit() at the end of shutdown process
-            onShutdown: this.shutdownFunction,     // shutdown function (async) - e.g. for cleanup DB, ...
+            onShutdown: this.shutdownFunction.bind(this),     // shutdown function (async) - e.g. for cleanup DB, ...
             finally: this.finalFunction,            // finally function (sync) - e.g. for logging
         });
 
@@ -650,7 +659,8 @@ export class DockgeServer {
         log.info("server", "Shutdown requested");
         log.info("server", "Called signal: " + signal);
 
-        // TODO: Close all terminals?
+        this.operations?.close();
+        // Running tasks remain recorded as running and are marked interrupted on restart.
 
         await Database.close();
         Settings.stopCacheCleaner();
