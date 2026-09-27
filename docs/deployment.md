@@ -2,7 +2,7 @@
 
 The API builds on official Dockge 1.5.0. `docker/Dockerfile.fork` pins that
 runtime by digest, installs dependencies from the lockfile, builds the frontend
-inside Docker, and labels every image with the source commit. It supports both
+inside Docker, compiles native extensions in the build stage, and labels every image with the source commit. It supports both
 BuildKit and the legacy Docker builder; host Node.js, npm and Git are not needed.
 
 ## Installed deployment on 192.168.2.211
@@ -30,7 +30,7 @@ sudo /opt/dockge/update.sh <40-character-commit-sha>
 The command downloads a commit-pinned source archive from GitHub and builds
 `yxa2111/dockge:git-<sha>` locally. This intentionally avoids dependence on private
 registry credentials or an image-publishing job. Internet access to GitHub,
-npm and Docker Hub is needed on a cold build. Layers and already-built revisions
+npm, Debian package repositories and Docker Hub is needed on a cold build. Native extensions are compiled locally, so GitHub release-binary downloads are not required. Layers and already-built revisions
 are reused. An already-running matching revision is checked without restarting.
 
 After a successful build, the updater checks for running API tasks, stops only

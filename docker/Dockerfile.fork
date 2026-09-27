@@ -2,6 +2,10 @@
 ARG DOCKGE_BASE=louislam/dockge@sha256:335c6368b880ecc203236ed89e6e5232e0d6578e8ef5920e4a502390451502bf
 FROM ${DOCKGE_BASE} AS build
 WORKDIR /build
+# Build native dependencies locally instead of fetching GitHub release binaries.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+ENV npm_config_build_from_source=true npm_config_nodedir=/usr/local
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend ./frontend
