@@ -61,6 +61,13 @@ export class ApiRouter extends Router {
             }
             return req.body;
         };
+        route("get", "/containers/stats", "read", async (req, res) => {
+            res.json(server.resources.current());
+        });
+        route("get", "/stacks/:name/stats", "read", async (req, res) => {
+            await StackService.managed(server, req.params.name);
+            res.json(server.resources.current(req.params.name));
+        });
         route("get", "/stacks", "read", async (req, res) => {
             const stacks = await Stack.getStackList(server);
             res.json({ stacks: Array.from(stacks.values(), stack => stack.toSimpleJSON("")) });

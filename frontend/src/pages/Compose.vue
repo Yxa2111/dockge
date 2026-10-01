@@ -81,6 +81,13 @@
                 ></Terminal>
             </transition>
 
+            <ContainerResourcesTable
+                v-if="stack.isManagedByDockge && !isEditMode && !endpoint && stack.name"
+                :stack-name="stack.name"
+                :services="envsubstJSONConfig.services || {}"
+                :service-status="serviceStatusList"
+            />
+
             <div v-if="stack.isManagedByDockge" class="row">
                 <div class="col-lg-6">
                     <!-- General -->
@@ -107,7 +114,7 @@
                     </div>
 
                     <!-- Containers -->
-                    <h4 class="mb-3">{{ $tc("container", 2) }}</h4>
+                    <h4 v-if="isEditMode || endpoint" class="mb-3">{{ $tc("container", 2) }}</h4>
 
                     <div v-if="isEditMode" class="input-group mb-3">
                         <input
@@ -121,7 +128,7 @@
                         </button>
                     </div>
 
-                    <div ref="containerList">
+                    <div v-if="isEditMode || endpoint" ref="containerList">
                         <Container
                             v-for="(service, name) in jsonConfig.services"
                             :key="name"
@@ -255,6 +262,7 @@ import {
     RUNNING
 } from "../../../common/util-common";
 import { BModal } from "bootstrap-vue-next";
+import ContainerResourcesTable from "../components/ContainerResourcesTable.vue";
 import NetworkInput from "../components/NetworkInput.vue";
 import dotenv from "dotenv";
 
@@ -279,6 +287,7 @@ let prismjsSymbolDefinition = {
 
 export default {
     components: {
+        ContainerResourcesTable,
         NetworkInput,
         FontAwesomeIcon,
         PrismEditor,

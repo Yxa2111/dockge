@@ -2,7 +2,7 @@
 
 This fork adds a local, single-machine API to Dockge 1.5.0. The existing web UI
 and Socket.IO/Agent protocol remain available. Remote Agent addressing, arbitrary
-commands, interactive terminals, resource statistics and per-service actions are
+commands, interactive terminals and per-service actions are
 not part of this API.
 
 The machine-readable contract is [openapi.yaml](openapi.yaml). API routes are on
@@ -33,7 +33,7 @@ created and independently revoked. Revocation does not cancel accepted tasks.
 
 | Permission | Access |
 | --- | --- |
-| `read` | Stack/service status, application logs, all operation results/logs |
+| `read` | Stack/service status, resource statistics, metrics, application logs, all operation results/logs |
 | `operate` | Read plus start, stop, restart, pull and update |
 | `manage` | Operate plus configuration read/write, create, deploy, down and delete |
 
@@ -45,6 +45,30 @@ Every request requires `Authorization: Bearer dg_...`, including when web
 authentication is disabled. In that mode the key-management page requires the
 administrator password. Keys are not accepted in URLs, cookies or query strings.
 Use HTTPS when connecting over an untrusted network.
+
+## Live container resources
+
+Managed local Stack pages show CPU, memory, network, block I/O and PIDs in each
+container's existing row. Values refresh approximately every two seconds. Editing
+and remote Agent views retain their existing controls.
+
+`GET /api/v1/containers/stats` returns the latest snapshot for all local Docker
+containers, including containers outside managed Stacks. `GET
+/api/v1/stacks/{name}/stats` filters by managed Stack. Both require `read` or higher
+permission. Containers are identified by Docker ID and Compose labels, including
+replicas and custom container/project names. Unsupported values, stopped
+containers and failed or stale samples have `null` values or `available: false`.
+The first sample has no network/block I/O rate until a second sample arrives.
+
+The collector keeps only the current snapshot and the previous counters needed
+to calculate rates in memory. There is no history, chart or statistics database.
+UI, JSON requests and exporter scrapes share the same collector; opening more
+browsers does not create more Docker sampling loops. Samples older than ten
+seconds are unavailable. Docker Engine API 1.41 or newer is required; an optional
+`DOCKGE_DOCKER_SOCKET` overrides the default `/var/run/docker.sock` path.
+
+See [metrics and VictoriaMetrics integration](metrics.md) for the authenticated
+`GET /metrics` exporter endpoint, metric names and scrape examples.
 
 ## Update an existing Stack
 

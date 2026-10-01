@@ -460,6 +460,68 @@ paths:
           $ref: '#/components/responses/409'
         '500':
           $ref: '#/components/responses/500'
+  /containers/stats:
+    get:
+      operationId: getContainerStats
+      tags: [Resources]
+      summary: Latest local container resource snapshot
+      description: Requires read permission. Shared collection updates about every 2 seconds. Values may be null during warmup or when unsupported. No history is stored.
+      responses:
+        '200':
+          description: Current inventory and statistics, including freshness and collection status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceSnapshot'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+  /stacks/{name}/stats:
+    get:
+      operationId: getStackStats
+      tags: [Resources]
+      summary: Latest resource snapshot for one managed Stack
+      description: Requires read permission. Matches Compose labels and working directory, including custom project and container names and multiple replicas.
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Filtered live snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceSnapshot'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+  /metrics:
+    get:
+      operationId: scrapeMetrics
+      tags: [Resources]
+      servers:
+      - url: /
+      summary: Prometheus metrics for vmagent and VictoriaMetrics
+      description: Requires a read-or-higher Bearer API Key. Returns Prometheus text 0.0.4. CPU time, network and block I/O use raw counters. Scrapes share the live collector. Missing or stale usage samples are omitted; collection health remains visible.
+      responses:
+        '200':
+          description: Exporter metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP dockge_stats_collection_success 1 when collection is fresh and successful.
+                # TYPE dockge_stats_collection_success gauge
+                dockge_stats_collection_success 1
+        '401':
+          $ref: '#/components/responses/401'
+
 components:
   securitySchemes:
     ApiKey:
@@ -467,6 +529,122 @@ components:
       scheme: bearer
       bearerFormat: dg_<opaque key>
   schemas:
+    ResourceValues:
+      type: object
+      properties:
+        cpu_percent:
+          type: number
+          nullable: true
+          description: 100% is one CPU core; may exceed 100%. Null until a valid baseline exists.
+        cpu_seconds_total:
+          type: number
+          nullable: true
+        memory_usage_bytes:
+          type: number
+          nullable: true
+        memory_working_set_bytes:
+          type: number
+          nullable: true
+          description: Usage minus inactive file cache, matching Docker CLI on Linux.
+        memory_limit_bytes:
+          type: number
+          nullable: true
+        memory_percent:
+          type: number
+          nullable: true
+        network_receive_bytes_total:
+          type: number
+          nullable: true
+          description: Sum of received bytes across container interfaces. Null when not reported, such as host networking.
+        network_transmit_bytes_total:
+          type: number
+          nullable: true
+        network_receive_bytes_per_second:
+          type: number
+          nullable: true
+        network_transmit_bytes_per_second:
+          type: number
+          nullable: true
+        block_read_bytes_total:
+          type: number
+          nullable: true
+        block_write_bytes_total:
+          type: number
+          nullable: true
+        block_read_bytes_per_second:
+          type: number
+          nullable: true
+        block_write_bytes_per_second:
+          type: number
+          nullable: true
+        pids:
+          type: number
+          nullable: true
+    ContainerResources:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        stack:
+          type: string
+        project:
+          type: string
+        service:
+          type: string
+        state:
+          type: string
+        health:
+          type: string
+          enum: [healthy, unhealthy, starting]
+          nullable: true
+        sampled_at:
+          type: integer
+          format: int64
+          nullable: true
+        available:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+        values:
+          allOf:
+          - $ref: '#/components/schemas/ResourceValues'
+          nullable: true
+    ResourceSnapshot:
+      type: object
+      properties:
+        stack:
+          type: string
+          description: Present when filtered by Stack.
+        sampled_at:
+          type: integer
+          format: int64
+          nullable: true
+        last_success_at:
+          type: integer
+          format: int64
+          nullable: true
+        status:
+          type: string
+          enum:
+          - starting
+          - ready
+          - degraded
+          - unavailable
+        stale:
+          type: boolean
+        error:
+          type: string
+          nullable: true
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerResources'
+
     Error:
       type: object
       properties:
@@ -665,3 +843,5 @@ tags:
   description: Application output. Use curl -N for streaming.
 - name: Operations
   description: Asynchronous task status and command output.
+- name: Resources
+  description: Live container resources and Prometheus metrics.

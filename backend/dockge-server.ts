@@ -1,3 +1,7 @@
+import { DockerStatsClient } from "./resources/docker-client";
+import { ResourceCollector } from "./resources/collector";
+import { ResourceSocketHandler } from "./socket-handlers/resource-socket-handler";
+import { MetricsRouter } from "./routers/metrics-router";
 import { ApiDocsRouter } from "./routers/api-docs-router";
 import { ApiRouter } from "./routers/api-router";
 import { ApiKeySocketHandler } from "./socket-handlers/api-key-socket-handler";
@@ -43,6 +47,7 @@ import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-
 import { Terminal } from "./terminal";
 
 export class DockgeServer {
+    resources!: ResourceCollector;
     operations!: Operations;
     app : Express;
     httpServer : http.Server;
@@ -58,6 +63,7 @@ export class DockgeServer {
         new MainRouter(),
         new ApiRouter(),
         new ApiDocsRouter(),
+        new MetricsRouter(),
     ];
 
     /**
@@ -66,6 +72,7 @@ export class DockgeServer {
     socketHandlerList : SocketHandler[] = [
         new MainSocketHandler(),
         new ApiKeySocketHandler(),
+        new ResourceSocketHandler(),
         new ManageAgentSocketHandler(),
     ];
 
@@ -164,6 +171,7 @@ export class DockgeServer {
         this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
         this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
         this.stacksDir = this.config.stacksDir;
+        this.resources = new ResourceCollector(new DockerStatsClient(undefined, undefined, this.stacksDir));
 
         log.debug("server", this.config);
 
@@ -366,6 +374,7 @@ export class DockgeServer {
             await Database.init(this);
             this.operations = new Operations(this);
             await this.operations.init();
+            this.resources.start();
         } catch (e) {
             if (e instanceof Error) {
                 log.error("server", "Failed to prepare your database: " + e.message);
@@ -661,6 +670,7 @@ export class DockgeServer {
         log.info("server", "Shutdown requested");
         log.info("server", "Called signal: " + signal);
 
+        this.resources.close();
         this.operations?.close();
         // Running tasks remain recorded as running and are marked interrupted on restart.
 

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import express from "express";
 import yaml from "yaml";
 import { fixture } from "./helpers";
+import { MetricsRouter } from "../backend/routers/metrics-router";
 import { ApiRouter } from "../backend/routers/api-router";
 
 test("bundled Swagger UI, single-source definition and API authentication", async () => {
@@ -45,6 +46,13 @@ test("bundled Swagger UI, single-source definition and API authentication", asyn
             if (layer.route) {
                 for (const method of Object.keys(layer.route.methods)) {
                     actual.push(method + " " + layer.route.path.replace(/:([a-z]+)/g, "{$1}"));
+                }
+            }
+        }
+        for (const layer of new MetricsRouter().create(express(), f.server).stack) {
+            if (layer.route) {
+                for (const method of Object.keys(layer.route.methods)) {
+                    actual.push(method + " " + layer.route.path);
                 }
             }
         }

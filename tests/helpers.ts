@@ -1,3 +1,5 @@
+import { ResourceCollector } from "../backend/resources/collector";
+import { MetricsRouter } from "../backend/routers/metrics-router";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -29,11 +31,13 @@ export async function fixture() {
     const server = { stacksDir,
         config: { dataDir: directory },
         sendStackList: async () => {} } as unknown as DockgeServer;
+    server.resources = new ResourceCollector();
     server.operations = new Operations(server);
     await server.operations.init();
     const app = express();
     app.use(new ApiRouter().create(app, server));
     app.use(new ApiDocsRouter().create(app, server));
+    app.use(new MetricsRouter().create(app, server));
     const http = app.listen(0, "127.0.0.1");
     await new Promise<void>(resolve => http.on("listening", resolve));
     const address = http.address();
@@ -64,6 +68,7 @@ export async function fixture() {
         keys,
         request,
         async close() {
+            server.resources.close();
             server.operations.close();
             await server.operations.idle();
             http.closeAllConnections();
